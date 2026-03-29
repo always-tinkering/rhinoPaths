@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "rhinomcp": {
+      "command": "uvx",
+      "args": ["rhinomcp"]
+    },
+    "grasshopper-mcp": {
+      "command": "uvx",
+      "args": ["--from", "grasshopper-mcp", "python", "-m", "grasshopper_mcp.bridge"]
+    }
+  }
+}

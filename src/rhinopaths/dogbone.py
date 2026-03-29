@@ -7,7 +7,7 @@ depth of an inside corner.
 
 All geometry is in plain (x, y[, z]) tuples — no Rhino dependency.
 The Rhino-specific wrapper that converts Curve ↔ polyline lives in
-src/components/dogbone_component.py.
+src/gh_components/definitions.py.
 """
 
 import math

@@ -2,6 +2,7 @@ import os
 import xml.etree.ElementTree as ET
 import sys
 import base64
+import json
 
 # Ensure definitions can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -124,3 +125,22 @@ if __name__ == "__main__":
     t_path = os.path.join(os.path.dirname(__file__), "..", "src", "gh_components", "template.ghx")
     o_path = os.path.join(os.path.dirname(__file__), "..", "plugin", "rhinoPaths.ghx")
     create_plugin(t_path, o_path)
+    
+    # Generate MCP Knowledge Base
+    kb_path = os.path.join(os.path.dirname(__file__), "..", "plugin", "mcp_knowledge.json")
+    print(f"Generating MCP Knowledge Base at {kb_path}...")
+    knowledge = []
+    for comp in COMPONENTS:
+        knowledge.append({
+            "name": comp.get("name"),
+            "nickname": comp.get("nickname"),
+            "description": comp.get("description"),
+            "category": comp.get("category"),
+            "subcategory": comp.get("subcategory"),
+            "inputs": comp.get("inputs", []),
+            "outputs": comp.get("outputs", []),
+            "code": comp.get("code", "")
+        })
+    with open(kb_path, "w") as f:
+        json.dump(knowledge, f, indent=2)
+    print("Done!")

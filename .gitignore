@@ -53,3 +53,6 @@ definitions/*.3dm
 *.nc
 *.sbp
 *.gcode
+
+# Generated
+plugin/mcp_knowledge.json

@@ -70,6 +70,12 @@ Simply drag and drop these components onto your Grasshopper canvas to start gene
    ```
    *Note: This utilizes the `rhinocode` CLI to bundle the `.rhproj` file into a distributable `.yak` file found in the `/build` folder. Make sure Rhino 8's Script Server is running.*
 
+### Agent-Driven Debugging (MCP)
+To enable AI-assisted debugging and integration testing with tools like Cursor or Claude Desktop, you can configure community **Model Context Protocol (MCP)** servers:
+1. Install [RhinoMCP](https://github.com/jingcheng-chen/rhinomcp) to allow AI agents to execute Python scripts inside a living Rhino document.
+2. Install [Grasshopper MCP Bridge](https://github.com/alfredatnycu/grasshopper-mcp) as a `GH_MCP.gha` plugin to allow AI agents to instantiate and wire `rhinoPaths` components automatically on a live Grasshopper canvas.
+3. Test geometries and fixtures can be accessed by the MCP servers via the `tests/fixtures/` directory. (Note: Ensure Rhino GUI is running when using MCP tools.)
+
 ---
 
 ## License
