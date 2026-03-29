@@ -1,0 +1,13 @@
+name: rhinoPaths
+version: 0.1.0-alpha.1
+authors:
+  - Andrew Germann
+description: >
+  An open-source CAM plugin for Rhino 8 and Grasshopper.
+  Includes 9 headless Python 3 cutting operations and Grasshopper wrapper components.
+url: https://github.com/opencam/rhinoPaths
+keywords:
+  - cam
+  - cnc
+  - grasshopper
+  - machining
