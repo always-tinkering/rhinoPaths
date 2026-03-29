@@ -17,7 +17,7 @@ COMPONENTS.append({
         ("climb", "bool", "True: climb, False: conventional"),
         ("start_z", "float", "Top of material, mm"),
         ("end_z", "float", "Cutting depth, mm (negative)"),
-        ("pass_depth", "float", "Max step-down per pass, mm"),
+        ("stepdown", "float", "Max step-down per pass, mm"),
     ],
     "outputs": [
         ("toolpath", "List of Curves", "2D toolpath curves at cut side"),
@@ -29,12 +29,12 @@ from rhinopaths.geometry import curve_to_polyline, polyline_to_curve
 from rhinopaths.toolpaths import cutout, pass_depths, apply_z
 
 # Defaults
-if tool_diam is None: tool_diam = 6.0
+if tool_diam is None: tool_diam = 6.35
 if side is None: side = "outside"
 if climb is None: climb = True
 if start_z is None: start_z = 0.0
-if end_z is None: end_z = -18.0
-if pass_depth is None: pass_depth = 6.0
+if end_z is None: end_z = -19.05
+if stepdown is None: stepdown = 3.175
 
 toolpath = []
 passes = []
@@ -50,7 +50,7 @@ try:
             toolpath = [polyline_to_curve(path_2d)]
             
             # Apply Z passes
-            depths = pass_depths(start_z, end_z, pass_depth)
+            depths = pass_depths(start_z, end_z, stepdown)
             passes_3d = apply_z(path_2d, depths)
             passes = [polyline_to_curve(p) for p in passes_3d]
 
@@ -74,7 +74,7 @@ COMPONENTS.append({
         ("stepover", "float", "Stepover fraction (0.0–1.0), default 0.5"),
         ("start_z", "float", "Top of material, mm"),
         ("end_z", "float", "Pocket depth, mm (negative)"),
-        ("pass_depth", "float", "Max step-down per pass, mm"),
+        ("stepdown", "float", "Max step-down per pass, mm"),
     ],
     "outputs": [
         ("shells", "List of Curves", "2D toolpath shells"),
@@ -85,11 +85,11 @@ import traceback
 from rhinopaths.geometry import curve_to_polyline, polyline_to_curve
 from rhinopaths.toolpaths import pocket, pass_depths, apply_z
 
-if tool_diam is None: tool_diam = 6.0
-if stepover is None: stepover = 0.5
+if tool_diam is None: tool_diam = 6.35
+if stepover is None: stepover = 0.4
 if start_z is None: start_z = 0.0
-if end_z is None: end_z = -12.0
-if pass_depth is None: pass_depth = 6.0
+if end_z is None: end_z = -12.7
+if stepdown is None: stepdown = 3.175
 
 shells = []
 passes = []
@@ -105,7 +105,7 @@ try:
         if shells_2d:
             shells = [polyline_to_curve(s) for s in shells_2d]
             
-            depths = pass_depths(start_z, end_z, pass_depth)
+            depths = pass_depths(start_z, end_z, stepdown)
             passes_3d = []
             for shell in shells_2d:
                 passes_3d.extend(apply_z(shell, depths))
@@ -128,6 +128,7 @@ COMPONENTS.append({
         ("circles", "List of Curves", "Circles to drill"),
         ("start_z", "float", "Top of material, mm"),
         ("end_z", "float", "Drill depth, mm (negative)"),
+        ("peck_depth", "float", "Max peck depth per plunge, mm"),
     ],
     "outputs": [
         ("centres", "List of Points", "Extracted drill centres"),
@@ -139,7 +140,8 @@ from rhinopaths.geometry import curve_to_polyline
 from rhinopaths.toolpaths import drill
 
 if start_z is None: start_z = 0.0
-if end_z is None: end_z = -10.0
+if end_z is None: end_z = -19.05
+if peck_depth is None: peck_depth = 5.0
 
 centres = []
 
@@ -168,7 +170,8 @@ COMPONENTS.append({
     "subcategory": "Operations",
     "inputs": [
         ("curves", "List of Curves", "Curves to engrave"),
-        ("z_depth", "float", "Engraving depth, mm (negative)"),
+        ("start_z", "float", "Top of material, mm"),
+        ("end_z", "float", "Engraving depth, mm (negative)"),
     ],
     "outputs": [
         ("passes", "List of Curves", "Sorted and Z-aligned engraving curves"),
@@ -178,7 +181,8 @@ import traceback
 from rhinopaths.geometry import curve_to_polyline, polyline_to_curve
 from rhinopaths.toolpaths import engrave
 
-if z_depth is None: z_depth = -1.0
+if start_z is None: start_z = 0.0
+if end_z is None: end_z = -1.5
 
 passes = []
 
@@ -187,10 +191,10 @@ try:
         tol = 0.01
         polys = [curve_to_polyline(c, tol) for c in curves]
         
-        # apply z_depth locally before sort
+        # apply end_z locally before sort
         z_polys = []
         for poly in polys:
-            z_polys.append([(p[0], p[1], z_depth) for p in poly])
+            z_polys.append([(p[0], p[1], end_z) for p in poly])
 
         sorted_polys = engrave(z_polys)
         passes = [polyline_to_curve(p) for p in sorted_polys]
@@ -221,7 +225,7 @@ import traceback
 from rhinopaths.geometry import curve_to_polyline, polyline_to_curve
 from rhinopaths.dogbone import add_dogbones
 
-if tool_diam is None: tool_diam = 6.0
+if tool_diam is None: tool_diam = 6.35
 if climb is None: climb = True
 
 dogboned = boundary
@@ -256,20 +260,23 @@ COMPONENTS.append({
     ],
     "outputs": [
         ("feed_mm_min", "float", "Calculated feedrate in mm/min"),
+        ("plunge_mm_min", "float", "Calculated plunge rate in mm/min"),
     ],
     "code": COMMON_BOOTSTRAP + """
 import traceback
 from rhinopaths.feedrate import feedrate
 
-if tool_diam is None: tool_diam = 6.0
+if tool_diam is None: tool_diam = 6.35
 if flutes is None: flutes = 2
 if rpm is None: rpm = 18000
 if chipload is None: chipload = 0.05
 
 feed_mm_min = None
+plunge_mm_min = None
 
 try:
     feed_mm_min = feedrate(tool_diam, flutes, rpm, chipload)
+    if feed_mm_min: plunge_mm_min = feed_mm_min * 0.4
 except Exception as e:
     print(f"Error calculating feedrate: {e}")
     print(traceback.format_exc())
@@ -287,9 +294,13 @@ COMPONENTS.append({
         ("cut_passes", "List of Curves", "Nested list of cut curves (e.g., from Cutout/Pocket)"),
         ("drill_pts", "List of Points", "List of drill centres (e.g., from Drill)"),
         ("machine", "str", "'gcode' or 'shopbot'"),
-        ("safe_z", "float", "Rapid retract height, mm"),
+        ("clearance_height", "float", "Rapid retract height, mm"),
+        ("spindle_rpm", "int", "Spindle rotation speed"),
+        ("peck_depth", "float", "Peck depth for drilling, mm"),
         ("ramp_dist", "float", "Helical ramp entry length, mm"),
         ("tabs", "bool", "Insert tabs automatically"),
+        ("tab_width", "float", "Width of generated tabs, mm"),
+        ("tab_thickness", "float", "Height of generated tabs, mm"),
         ("feedrate", "float", "Cutting feedrate, mm/min"),
         ("plunge", "float", "Plunge speed, mm/min"),
     ],
@@ -302,17 +313,22 @@ from rhinopaths.geometry import curve_to_polyline
 from rhinopaths.postprocessor import GCodePost, ShopBotPost
 
 if machine is None: machine = "gcode"
-if safe_z is None: safe_z = 20.0
+if clearance_height is None: clearance_height = 12.7
+if spindle_rpm is None: spindle_rpm = 18000
+if peck_depth is None: peck_depth = 5.0
 if ramp_dist is None: ramp_dist = 0.0
 if tabs is None: tabs = False
-if feedrate is None: feedrate = 2000.0
+if tab_width is None: tab_width = 8.0
+if tab_thickness is None: tab_thickness = 3.0
+if feedrate is None: feedrate = 2500.0
 if plunge is None: plunge = 800.0
 
 file_content = ""
 
 try:
     post_cls = ShopBotPost if str(machine).lower() == "shopbot" else GCodePost
-    post = post_cls(safe_z=safe_z, feedrate=feedrate, plunge_speed=plunge)
+    spindle_cmd = f"M3 S{int(spindle_rpm)}"
+    post = post_cls(spindle_on_cmd=spindle_cmd, clearance_height=clearance_height, feedrate=feedrate, plunge_speed=plunge)
     
     post.header()
     
@@ -340,14 +356,14 @@ try:
                     pts = post.ramp_entry(pts, ramp_dist)
                 
                 if tabs:
-                    pts = post.tabs(pts, z_lift=5.0, current_z=z_start)
-
-                post.toolpath(pts)
+                    post.tabs(pts, cut_z=z_start, tab_width=tab_width, tab_height=tab_thickness, feedrate=feedrate)
+                else:
+                    post.toolpath(pts)
     
     # Process drills
     if drill_pts:
         pts = [(p.X, p.Y, p.Z) for p in drill_pts]
-        post.drill_points(pts)
+        post.drill_points(pts, peck_depth=peck_depth)
 
     post.footer()
     file_content = post.get_code()
@@ -434,7 +450,7 @@ COMPONENTS.append({
     "inputs": [
         ("start_z", "float", "Top of material, mm"),
         ("end_z", "float", "Target cutting depth, mm (negative)"),
-        ("pass_depth", "float", "Max step-down per pass, mm"),
+        ("stepdown", "float", "Max step-down per pass, mm"),
     ],
     "outputs": [
         ("depths", "List of Floats", "Calculated Z depths from start_z to end_z"),
@@ -444,13 +460,13 @@ import traceback
 from rhinopaths.toolpaths import pass_depths as calc_depths
 
 if start_z is None: start_z = 0.0
-if end_z is None: end_z = -18.0
-if pass_depth is None: pass_depth = 6.0
+if end_z is None: end_z = -19.05
+if stepdown is None: stepdown = 3.175
 
 depths = []
 
 try:
-    depths = calc_depths(start_z, end_z, pass_depth)
+    depths = calc_depths(start_z, end_z, stepdown)
 except Exception as e:
     print(f"Error calculating pass depths: {e}")
     print(traceback.format_exc())

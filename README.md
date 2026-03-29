@@ -47,6 +47,17 @@ Simply drag and drop these components onto your Grasshopper canvas to start gene
 
 ---
 
+## 📏 Standardized CAM Parameters
+
+rhinoPaths embraces industry-standard CAM terminology and hobbyist-friendly defaults to provide an intuitive experience out of the box:
+* **`stepdown`**: The maximum depth the tool will cut per pass (formerly pass_depth). Defaults to `3.175 mm` (1/8").
+* **`clearance_height`**: Safety retract height between cuts to clear clamps and material (formerly safe_z). Defaults to `12.7 mm` (1/2").
+* **`stepover`**: Percentage of the tool diameter to move sideways during pocketing routines. Defaults to `0.4` (40%).
+* **Default Tool**: Pre-configured for a typical `6.35 mm` (1/4") end mill.
+* **Default Stock**: Pre-configured for `19.05 mm` (3/4") material.
+
+---
+
 ## 👩‍💻 For Developers & Contributors
 
 `rhinoPaths` is built natively for Rhino 8's new CPython 3 architecture. 

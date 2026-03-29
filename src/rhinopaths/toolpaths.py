@@ -20,7 +20,7 @@ from .geometry import (
 # pass_depths  — pure Python, fully headless
 # ---------------------------------------------------------------------------
 
-def pass_depths(start_z, end_z, pass_depth):
+def pass_depths(start_z, end_z, stepdown):
     """
     Generate a list of Z depths for multi-pass cutting.
 
@@ -30,21 +30,21 @@ def pass_depths(start_z, end_z, pass_depth):
     Args:
         start_z:    float, material top surface (e.g. 0.0)
         end_z:      float, target depth (e.g. -18.0)
-        pass_depth: float, maximum step-down per pass (positive number)
+        stepdown: float, maximum step-down per pass (positive number)
 
     Returns:
         list of float z-values, e.g. [-6.0, -12.0, -18.0]
     """
-    if pass_depth <= 0:
-        raise ValueError("pass_depth must be positive")
+    if stepdown <= 0:
+        raise ValueError("stepdown must be positive")
     if end_z >= start_z:
         raise ValueError("end_z must be below start_z")
 
     depths = []
-    z = start_z - abs(pass_depth)
+    z = start_z - abs(stepdown)
     while z > end_z:
         depths.append(round(z, 6))
-        z -= abs(pass_depth)
+        z -= abs(stepdown)
     depths.append(round(end_z, 6))  # always include the final depth
     return depths
 

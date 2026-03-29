@@ -99,7 +99,7 @@ def test_tabs_produces_output():
     """tabs() should produce G-code lines for a simple square path."""
     pp = GCodePost()
     sq = [(0, 0), (50, 0), (50, 50), (0, 50), (0, 0)]
-    lines = pp.tabs(sq, cut_z=-18.0, safe_z=-15.0, tab_width=8.0, spacing=40.0)
+    lines = pp.tabs(sq, cut_z=-18.0, tab_width=8.0, spacing=40.0)
     assert len(lines) > 0
     assert all(isinstance(l, str) for l in lines)
 
@@ -109,7 +109,7 @@ def test_tabs_lifts_z():
     cut_z = -18.0
     tab_z = -15.0
     sq = [(0, 0)] + [(i * 10, 0) for i in range(1, 20)]  # 190mm straight line
-    lines = pp.tabs(sq, cut_z=cut_z, safe_z=tab_z,
+    lines = pp.tabs(sq, cut_z=cut_z,
                     tab_width=8.0, spacing=30.0, feedrate=1200.0)
     # At least one line should have Z above cut_z
     lifted = [l for l in lines if f"Z{tab_z:.3f}" in l]
@@ -121,7 +121,7 @@ def test_tabs_returns_to_cut_z():
     cut_z = -12.0
     tab_z = -9.0
     path = [(i * 5, 0) for i in range(40)]  # 200mm
-    lines = pp.tabs(path, cut_z=cut_z, safe_z=tab_z,
+    lines = pp.tabs(path, cut_z=cut_z,
                     tab_width=6.0, spacing=40.0)
     cut_lines = [l for l in lines if f"Z{cut_z:.3f}" in l]
     tab_lines  = [l for l in lines if f"Z{tab_z:.3f}" in l]

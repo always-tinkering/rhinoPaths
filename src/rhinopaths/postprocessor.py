@@ -46,21 +46,32 @@ class GCodePost:
         post.feed(x=10, y=20, f=1200)  # G1 X10.000 Y20.000 F1200.0
     """
 
-    def __init__(self, units="mm", spindle_on_cmd="M3 S18000"):
+    def __init__(self, units="mm", spindle_on_cmd="M3 S18000", clearance_height=12.7, feedrate=2500.0, plunge_speed=800.0):
         self.units = units
         self.spindle_on_cmd = spindle_on_cmd
+        self.clearance_height = clearance_height
+        self.feedrate = feedrate
+        self.plunge_speed = plunge_speed
         self._last_f = None
+        self.lines = []
 
     def header(self):
         unit_cmd = "G21" if self.units == "mm" else "G20"
-        return (
+        code = (
             f"G90 ; absolute coordinates\n"
             f"{unit_cmd} ; {'metric' if self.units == 'mm' else 'imperial'} units\n"
             f"{self.spindle_on_cmd} ; spindle on"
         )
+        self.lines.append(code)
+        return code
 
     def footer(self):
-        return "M5 ; spindle off\nG0 Z50.000 ; safe retract\nM30 ; end program"
+        code = f"M5 ; spindle off\nG0 Z{_fmt(self.clearance_height)} ; safe retract\nM30 ; end program"
+        self.lines.append(code)
+        return code
+    
+    def get_code(self):
+        return "\n".join(self.lines)
 
     def rapid(self, **kwargs):
         axes = _kwargs_to_axes(**kwargs)
@@ -87,10 +98,82 @@ class GCodePost:
         return f"G3 {axes} I{_fmt(i)} J{_fmt(j)}{f_str}"
 
     # ------------------------------------------------------------------
+    # Drilling cycles
+    # ------------------------------------------------------------------
+
+    def drill_points(self, points, start_z=0.0, peck_depth=0.0):
+        """
+        Generate G-code for drilling a set of points.
+
+        Args:
+            points: list of (x, y, z) where z is the final depth
+            start_z: starting Z height for peck drilling
+            peck_depth: amount to step down each peck. If <= 0, single plunge.
+        """
+        lines = []
+        for p in points:
+            x, y, end_z = p[0], p[1], p[2]
+            lines.append(self.rapid(z=self.clearance_height)) # always safe Z first
+            lines.append(self.rapid(x=x, y=y))
+            lines.append(self.rapid(z=start_z + 1.0)) # rapid to slightly above material
+
+            if peck_depth > 0:
+                current_z = start_z
+                while current_z > end_z:
+                    current_z = max(end_z, current_z - peck_depth)
+                    lines.append(self.feed(z=current_z, f=self.plunge_speed))
+                    lines.append(self.rapid(z=start_z + 1.0)) # retract above material
+                    lines.append(self.rapid(z=current_z + 0.5)) # return to 0.5mm above last cut
+            else:
+                lines.append(self.feed(z=end_z, f=self.plunge_speed))
+            
+            lines.append(self.rapid(z=self.clearance_height))
+
+        self.lines.extend(lines)
+        return lines
+
+    # ------------------------------------------------------------------
+    # Regular toolpaths
+    # ------------------------------------------------------------------
+
+    def toolpath(self, pts):
+        """
+        Generate generic 2D/3D XYZ toolpath.
+
+        Args:
+            pts: list of (x, y) or (x, y, z) 
+        """
+        if not pts:
+            return []
+            
+        lines = []
+        start_pt = pts[0]
+        start_x, start_y = start_pt[0], start_pt[1]
+        start_z = start_pt[2] if len(start_pt) > 2 else 0.0
+        
+        # Safe transit to start
+        lines.append(self.rapid(z=self.clearance_height))
+        lines.append(self.rapid(x=start_x, y=start_y))
+        
+        # Plunge
+        lines.append(self.feed(z=start_z, f=self.plunge_speed))
+        
+        # Cut path
+        for p in pts[1:]:
+            x, y = p[0], p[1]
+            z = p[2] if len(p) > 2 else None
+            lines.append(self.feed(x=x, y=y, z=z, f=self.feedrate))
+            
+        # Retract
+        lines.append(self.rapid(z=self.clearance_height))
+        self.lines.extend(lines)
+        return lines
+
+    # ------------------------------------------------------------------
     # Tab insertion
     # ------------------------------------------------------------------
 
-    def tabs(self, polyline_pts, cut_z, safe_z, tab_width=8.0,
+    def tabs(self, polyline_pts, cut_z, tab_width=8.0,
              tab_height=3.0, spacing=80.0, feedrate=1200.0):
         """
         Insert holding tabs along a closed polyline path.
@@ -101,7 +184,6 @@ class GCodePost:
         Args:
             polyline_pts: list of (x, y) cut-depth points (2D)
             cut_z:        float — cutting Z depth (e.g. -18.0)
-            safe_z:       float — Z to retract to during tab (e.g. cut_z + tab_height)
             tab_width:    float — mm of travel at raised Z per tab
             tab_height:   float — how far to lift above cut_z for tab
             spacing:      float — distance between tab centres along path
@@ -114,6 +196,16 @@ class GCodePost:
         n = len(polyline_pts)
         if n < 2:
             return lines
+
+        start_pt = polyline_pts[0]
+        start_x, start_y = start_pt[0], start_pt[1]
+        
+        # Safe transit to start
+        lines.append(self.rapid(z=self.clearance_height))
+        lines.append(self.rapid(x=start_x, y=start_y))
+        
+        # Plunge
+        lines.append(self.feed(z=cut_z, f=self.plunge_speed))
 
         tab_z = cut_z + tab_height
         dist_since_tab = spacing / 2.0  # start first tab at spacing/2
@@ -151,6 +243,10 @@ class GCodePost:
                 else:
                     lines.append(self.feed(x=p[0], y=p[1], z=cut_z, f=feedrate))
 
+        # Retract
+        lines.append(self.rapid(z=self.clearance_height))
+        
+        self.lines.extend(lines)
         return lines
 
     # ------------------------------------------------------------------
@@ -208,6 +304,7 @@ class GCodePost:
             if z <= end_z:
                 break
 
+        self.lines.extend(lines)
         return lines
 
 
@@ -223,14 +320,20 @@ class ShopBotPost(GCodePost):
     """
 
     def header(self):
-        return (
+        code = (
             "SA ; set absolute mode\n"
             "MS,100,60 ; set move/jog speeds (ipm)\n"
             "C6 ; spindle on"
         )
+        self.lines.append(code)
+        return code
 
     def footer(self):
-        return "C7 ; spindle off\nJ3,0,0,1 ; safe retract\nEnd ; end program"
+        # Note: ShopBot uses Z as the 3rd argument in J3 (X,Y,Z). If J3,0,0,1 was used, it meant Z=1 inch.
+        # We will use clearance_height
+        code = f"C7 ; spindle off\nJ3,0,0,{_fmt(self.clearance_height)} ; safe retract\nEnd ; end program"
+        self.lines.append(code)
+        return code
 
     def rapid(self, **kwargs):
         x = kwargs.get("x")
