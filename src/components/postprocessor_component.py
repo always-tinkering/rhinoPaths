@@ -17,6 +17,11 @@ Outputs:
     line_count  : int      — number of output lines
 """
 
+import sys as _sys, os as _os
+_SRC = _os.path.normpath("/Users/angrym4macmini/antigravity/scratch/opencam-rhino8/src")
+if _SRC not in _sys.path:
+    _sys.path.insert(0, _SRC)
+
 from rhinopaths.geometry import curve_to_polyline
 from rhinopaths.postprocessor import GCodePost, ShopBotPost
 import os

@@ -12,6 +12,11 @@ Outputs:
     gcode      : str      — G-code drill cycle string
 """
 
+import sys as _sys, os as _os
+_SRC = _os.path.normpath("/Users/angrym4macmini/antigravity/scratch/opencam-rhino8/src")
+if _SRC not in _sys.path:
+    _sys.path.insert(0, _SRC)
+
 import rhinopaths
 from rhinopaths.geometry import curve_to_polyline, polyline_to_curve
 from rhinopaths.toolpaths import drill

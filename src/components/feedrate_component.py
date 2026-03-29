@@ -18,6 +18,11 @@ Outputs:
     arc_feed   : float  — compensated feedrate for internal arcs, mm/min
 """
 
+import sys as _sys, os as _os
+_SRC = _os.path.normpath("/Users/angrym4macmini/antigravity/scratch/opencam-rhino8/src")
+if _SRC not in _sys.path:
+    _sys.path.insert(0, _SRC)
+
 from rhinopaths.feedrate import (
     recommended_chipload, feedrate as calc_feedrate, feedrate_for_arcs
 )

@@ -16,6 +16,11 @@ Outputs:
     bounds      : Box     — bounding box of the toolpath
 """
 
+import sys as _sys, os as _os
+_SRC = _os.path.normpath("/Users/angrym4macmini/antigravity/scratch/opencam-rhino8/src")
+if _SRC not in _sys.path:
+    _sys.path.insert(0, _SRC)
+
 import re
 import Rhino.Geometry as rg
 

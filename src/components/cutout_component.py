@@ -11,6 +11,11 @@ Outputs:
     Toolpaths (List of Rhino.Geometry.Curve) : Extracted toolpaths
 """
 
+import sys as _sys, os as _os
+_SRC = _os.path.normpath("/Users/angrym4macmini/antigravity/scratch/opencam-rhino8/src")
+if _SRC not in _sys.path:
+    _sys.path.insert(0, _SRC)
+
 try:
     import rhinopaths.toolpaths as tp
 except ImportError:
