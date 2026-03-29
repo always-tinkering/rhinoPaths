@@ -1,76 +1,90 @@
 """
-AUTOMATED INSTALLER - Grasshopper Python 3 Node
-Paste this code into a fresh Python 3 Component in Rhino 8 Grasshopper.
+rhinoPaths Installer Component
+Paste into a Python 3 Script component in Rhino 8 Grasshopper.
 
-Inputs:
-    RunInstall (bool) : Set true (e.g. via boolean toggle) to run the installer
-Outputs:
-    Log (str) : Installation log output
+HOW TO USE:
+  Option A (recommended): Run this one terminal command instead:
+      ~/.rhinocode/py39-rh8/bin/pip install -e ~/path/to/opencam-rhino8
+
+  Option B: Wire a Boolean Toggle to 'run_install' input in the Script Editor,
+            set it True, and this component will install everything automatically.
 """
 
 import sys
 import subprocess
 import os
 
+# In Rhino 8 new Script Editor: add input param named 'run_install' (bool, optional)
+# Falls back to True if not wired (runs immediately)
 try:
-    import rhinoscriptsyntax as rs
-    import scriptcontext as sc
-except ImportError:
-    pass  # We catch this so the IDE doesn't complain, but it will be available in GH
+    _should_run = bool(run_install)
+except NameError:
+    _should_run = True  # no input wired → run immediately
 
-def get_gh_doc_path():
-    """Helper to get the current Grasshopper document folder"""
-    if sc.doc and hasattr(sc.doc, 'Path') and sc.doc.Path:
-        return os.path.dirname(sc.doc.Path)
+def _find_project_root():
+    """Find the rhinoPaths project root (the folder containing pyproject.toml)."""
+    # Strategy 1: relative to this script's location
+    this_file = os.path.abspath(__file__) if "__file__" in dir() else None
+    if this_file:
+        candidate = os.path.abspath(os.path.join(os.path.dirname(this_file), "..", ".."))
+        if os.path.exists(os.path.join(candidate, "pyproject.toml")):
+            return candidate
+
+    # Strategy 2: well-known path (edit this if you cloned elsewhere)
+    known = os.path.expanduser("~/antigravity/scratch/opencam-rhino8")
+    if os.path.exists(os.path.join(known, "pyproject.toml")):
+        return known
+
+    # Strategy 3: search up from current working directory
+    cwd = os.getcwd()
+    for _ in range(6):
+        if os.path.exists(os.path.join(cwd, "pyproject.toml")):
+            return cwd
+        cwd = os.path.dirname(cwd)
+
     return None
 
-def install_dependencies():
-    log = []
-    
-    # Get Python executable path used by Rhino 8 (typically CPython 3.9)
-    python_exe = sys.executable
-    log.append(f"Using Python: {python_exe}")
-    
-    # 1. Install 'clipper2' from PyPI
-    log.append("Installing clipper2 from PyPI...")
+def install():
+    log = [f"Python: {sys.executable}  ({sys.version.split()[0]})"]
+    pip = os.path.join(os.path.dirname(sys.executable), "pip3")
+    if not os.path.exists(pip):
+        pip = os.path.join(os.path.dirname(sys.executable), "pip")
+    if not os.path.exists(pip):
+        pip = [sys.executable, "-m", "pip"]
+    else:
+        pip = [pip]
+
+    # Step 1: Install deps
+    log.append("Installing numpy + clipper2...")
+    r = subprocess.run(pip + ["install", "numpy", "clipper2"],
+                       capture_output=True, text=True)
+    log.append(r.stdout.strip() or "(no output)")
+    if r.returncode != 0:
+        log.append(f"  STDERR: {r.stderr.strip()}")
+
+    # Step 2: Install rhinopaths in editable mode
+    root = _find_project_root()
+    if root:
+        log.append(f"Installing rhinopaths from: {root}")
+        r = subprocess.run(pip + ["install", "-e", root],
+                           capture_output=True, text=True)
+        log.append(r.stdout.strip() or "(no output)")
+        if r.returncode != 0:
+            log.append(f"  STDERR: {r.stderr.strip()}")
+    else:
+        log.append("ERROR: Could not find project root (pyproject.toml).")
+        log.append("Run manually: ~/.rhinocode/py39-rh8/bin/pip install -e <path>")
+
+    # Verify
     try:
-        result = subprocess.run(
-            [python_exe, "-m", "pip", "install", "clipper2", "numpy"], 
-            capture_output=True, text=True
-        )
-        log.append(result.stdout)
-        if result.stderr:
-            log.append(result.stderr)
-    except Exception as e:
-        log.append(f"Error installing dependencies: {e}")
-        
-    # 2. Local pip install -e . for our rhinopaths library
-    gh_folder = get_gh_doc_path()
-    
-    if not gh_folder:
-        log.append("ERROR: Save the Grasshopper file first so we can find the relative 'src' directory!")
-        return "\n".join(log)
-        
-    # Assuming the repository structure (gh doc is in definitions/)
-    repo_root = os.path.abspath(os.path.join(gh_folder, ".."))
-    log.append(f"Installing local rhinopaths package from: {repo_root}")
-    
-    try:
-        result = subprocess.run(
-            [python_exe, "-m", "pip", "install", "-e", repo_root],
-            capture_output=True, text=True
-        )
-        log.append(result.stdout)
-        if result.stderr:
-            log.append(result.stderr)
-    except Exception as e:
-        log.append(f"Error installing local package: {e}")
-        
-    log.append("Installation routine complete. You can now use rhinoPaths components.")
+        import rhinopaths
+        log.append("✅ import rhinopaths OK")
+    except ImportError as e:
+        log.append(f"❌ import rhinopaths FAILED: {e}")
+
     return "\n".join(log)
 
-# Ensure the inputs map to the variables
-if "RunInstall" in globals() and RunInstall:
-    Log = install_dependencies()
+if _should_run:
+    print(install())
 else:
-    Log = "Set RunInstall to True to execute installation."
+    print("rhinoPaths Installer ready. Set run_install=True to execute.")
