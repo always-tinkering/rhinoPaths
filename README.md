@@ -1,88 +1,76 @@
-# rhinoPaths — Open-Source CAM for Rhino 8
+# rhinoPaths — Free, Open-Source CAM for Rhino 8
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 
-A free, open-source parametric CAM plugin for **Rhino 8 / Grasshopper 1**, filling the only serious gap in the Rhino ecosystem. RhinoCAM charges $1,500–$2,500 for what should be accessible to makerspaces, fab labs, and architecture schools worldwide.
+A free, open-source parametric CAM plugin for **Rhino 8 and Grasshopper**, designed to make CNC routing and milling accessible to designers, makerspaces, fab labs, and architecture schools worldwide.
+
+Why pay thousands of dollars for proprietary CAM software when you can generate high-quality toolpaths directly inside Grasshopper for free?
 
 ---
 
-## Features (Phase 1 — 2.5-axis)
+## 🚀 Easy Installation
 
-| Operation | Status |
-|-----------|--------|
-| Profile / Cutout | 🚧 In progress |
-| Raster Pocket | 🚧 In progress |
-| Drill | 🚧 In progress |
-| Engrave | 🚧 In progress |
-| Dogbone corners | 🚧 In progress |
-| G-code output (Fanuc/GRBL) | ✅ Working |
-| ShopBot `.sbp` output | ✅ Working |
-| Feedrate calculator | ✅ Working |
-| Automated GH installer | ✅ Working |
+Using `rhinoPaths` is incredibly simple. You do not need to know how to code to use this plugin!
 
----
+### Option 1: Rhino Package Manager (Recommended)
+1. Open **Rhino 8**.
+2. Type `PackageManager` in the Rhino command line and press Enter.
+3. Search for **rhinoPaths**.
+4. Click **Install**.
+5. Restart Rhino. Open Grasshopper, and you will see the new **rhinoPaths** tab at the top of your screen!
 
-## Architecture
-
-```
-rhinopaths/
-├── src/rhinopaths/         # Core Python 3 algorithm library (headless, pip-installable)
-│   ├── geometry.py         # Curve utilities, containment, polyline conversion
-│   ├── offset.py           # Safe non-self-intersecting offset (RhinoCommon + Clipper2)
-│   ├── toolpaths.py        # 2.5-axis CAM operations
-│   ├── dogbone.py          # Concave corner arc insertion
-│   ├── feedrate.py         # Chipload-based feedrate calculator
-│   ├── postprocessor.py    # G-code + ShopBot post-processor
-│   └── units.py            # mm/inch conversion helpers
-├── src/components/         # Thin Grasshopper Python 3 Script wrapper components
-│   ├── install_component.py  # Run once to install dependencies
-│   └── cutout_component.py
-├── definitions/            # Grasshopper definitions (.ghx) and template files
-├── examples/               # Sample Rhino geometry for testing
-└── tests/                  # Headless pytest suite (no Rhino required)
-```
-
-**Key design principle:** All algorithm logic lives in the `rhinopaths` Python package. Grasshopper components are thin wrappers that collect inputs, call library functions, and return geometry. This means the library is fully unit-testable without Rhino.
+### Option 2: Manual Installation (.yak file)
+1. Download the latest `rhinoPaths-...yak` file from the [Releases](https://github.com/always-tinkering/rhinoPaths/releases) page.
+2. Open **Rhino 8**.
+3. Drag and drop the `.yak` file directly into the open Rhino 8 viewport.
+4. Rhino will install the package automatically. Restart Rhino.
+5. Open Grasshopper to access the **rhinoPaths** components.
 
 ---
 
-## Getting Started
+## 🛠️ Features (2.5-Axis Milling)
 
-### Prerequisites
-- Rhino 8 (with Grasshopper 1)
-- Git
+Simply drag and drop these components onto your Grasshopper canvas to start generating G-Code for your CNC router!
 
-### Installation
+| Operation | Description | Status |
+|-----------|-------------|--------|
+| **Cutout / Profile** | Cut outside, inside, or exactly on a line. Supports climb/conventional milling and multi-pass depth cuts. | ✅ Working |
+| **Raster Pocket** | Hollow out shapes with concentric toolpaths. Supports island avoidance and custom stepovers. | ✅ Working |
+| **Drill** | Automatically extract hole centers from circles and generate drill cycles. | ✅ Working |
+| **Engrave** | Follow open curves for V-carving or standard engraving. | ✅ Working |
+| **Dogbone Corners** | Automatically insert circular reliefs into sharp inside corners so parts fit together perfectly after CNC cutting. | ✅ Working |
+| **Feedrate Calculator** | Automatically dial in your feeds and speeds based on your tool diameter, flutes, and desired chip load. | ✅ Working |
+| **Post-Processor** | Export your toolpaths! Includes built-in support for standard standard `G-code` (.nc) and ShopBot (`.sbp`). | ✅ Working |
+| **G-Code Previewer** | Read G-Code back into Grasshopper to visualize and verify the exact generated toolpaths (red for rapid travel, blue for cutting). | ✅ Working |
 
+---
+
+## 👩‍💻 For Developers & Contributors
+
+`rhinoPaths` is built natively for Rhino 8's new CPython 3 architecture. 
+* All heavy-lifting algorithms (offsets, toolpath logic, post-processors) live in a headless, unit-testable Python library (`src/rhinopaths/`).
+* The Grasshopper components are lightweight UI wrappers generated programmatically into a `.yak` package.
+
+### Building the Plugin Locally
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/opencam-rhino8.git
+   git clone https://github.com/always-tinkering/rhinoPaths.git
    ```
-
-2. Open `definitions/OpenCAM_v0.1.ghx` in Rhino 8 / Grasshopper.
-
-3. Find the **Installer** component, set its `RunInstall` toggle to `True`. This will automatically:
-   - Install `clipper2` from PyPI into Rhino's Python environment
-   - Install the `rhinopaths` package via `pip install -e .`
-
-4. You're ready. All other components can now `import rhinopaths` cleanly.
-
-### Running Tests (no Rhino needed)
-
-```bash
-cd opencam-rhino8
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-pytest tests/ -v
-```
+2. (Optional) Run the headless Python test suite:
+   ```bash
+   python -m venv .venv && source .venv/bin/activate
+   pip install -e ".[dev]"
+   pytest tests/ -v
+   ```
+3. To package the Grasshopper plugin, run the build script (Mac/Linux):
+   ```bash
+   ./build.sh
+   ```
+   *Note: This utilizes the `rhinocode` CLI to bundle the `.rhproj` file into a distributable `.yak` file found in the `/build` folder. Make sure Rhino 8's Script Server is running.*
 
 ---
-
-## Contributing
-
-Pull requests welcome. See the [Build Checklist](docs/CHECKLIST.md) for current status and open tasks.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Free for personal, academic, and commercial use.

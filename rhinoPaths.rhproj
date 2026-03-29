@@ -1,0 +1,24 @@
+{
+  "id": "A4181B5E-32E1-4BE5-A2DA-23C2A3C1BEA1",
+  "identity": {
+    "name": "rhinoPaths",
+    "version": "0.1.0",
+    "publisher": "OpenCAM"
+  },
+  "settings": {
+    "buildPath": "build/",
+    "buildTarget": {
+      "host": {
+        "name": "Rhino3D",
+        "version": "8.0"
+      }
+    }
+  },
+  "source": {
+    "scripts": [
+      {
+        "location": "src/gh_components/rhinoPaths_components.gh"
+      }
+    ]
+  }
+}
