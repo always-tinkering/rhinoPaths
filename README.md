@@ -13,15 +13,16 @@ Why pay thousands of dollars for proprietary CAM software when you can generate 
 
 Using `rhinoPaths` is incredibly simple. You do not need to know how to code to use this plugin!
 
-### Option 1: Rhino Package Manager (Recommended)
+### Option 1: Rhino Package Manager (Coming Soon!)
+*Currently in Alpha. Once v1.0 is published, you will be able to install via:*
 1. Open **Rhino 8**.
 2. Type `PackageManager` in the Rhino command line and press Enter.
 3. Search for **rhinoPaths**.
 4. Click **Install**.
 5. Restart Rhino. Open Grasshopper, and you will see the new **rhinoPaths** tab at the top of your screen!
 
-### Option 2: Manual Installation (.yak file)
-1. Download the latest `rhinoPaths-...yak` file from the [Releases](https://github.com/always-tinkering/rhinoPaths/releases) page.
+### Option 2: Manual Installation (Alpha Users)
+1. Download the latest `rhinoPaths-...yak` file from the [Releases](https://github.com/always-tinkering/rhinoPaths/releases) page. (Or build it yourself locally).
 2. Open **Rhino 8**.
 3. Drag and drop the `.yak` file directly into the open Rhino 8 viewport.
 4. Rhino will install the package automatically. Restart Rhino.
